@@ -5,9 +5,16 @@
   "private": true,
   "devDependencies": {
     "@anymud/bun-plugin-dts": "^1.0.2",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "dts-bundle-generator": "^9.5.1",
+    "esbuild": "^0.28.2",
+    "glob": "^13.0.6",
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "node --watch --watch-path=./src --experimental-strip-types build.ts"
   }
 }

@@ -1,3 +1,21 @@
+/*
+    This file is part of PolyModLoader
+
+    Copyright (C) 2026 the polytrackmods team
+
+    PolyModLoader is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see https://www.gnu.org/licenses/.
+*/
 
 export function get(e?: any, t?: any, n?: any, i?: any) {
     if ("a" === n && !i)
@@ -27,8 +45,8 @@ export const ObfNames = {
         SimVector3: `R`,
     },
     Editor: {
-        CategoriesEnum: "ru.A",
-        BlocksEnum: "iu.A",
+        CategoriesEnum: "Au.A",
+        BlocksEnum: "$r.A",
         BlockRegister: "i(2600).yD",
         BlockMap: "i(2600).BlockMap",
         BlockMapInternal: "f",
@@ -62,24 +80,27 @@ export const ObfNames = {
     Mixins: {
         Editor: {
             IgnoreOnExportToken: `for (const r of (0, d.gn)(this, o, "f")) {`,
-            BlockInitClass: `ou`,
+            BlockInitClass: `wu`,
             BlockInitModelList: `r`,
             EditorBundle: '112.bundle.js',
-            EditorConstructor: `constructor(t, e, n, s, o, a, r, h, l, c, d, g, f, p) {`,
+            EditorConstructor: `constructor(t, e, n, s, o, a, r, h, l, c, d, g, f, p, u) {`,
             EditorDispose: `(t.removeChild((0, i.gn)(this, re, "f")),`,
             BlockConfigExports: `l1: () => m, yD: () => u`,
 
             EnterTrack: `((p.className = "content"), f.appendChild(p));`,
-            ExitTrack: `((0, R.gn)(this, ii, "f").removeChild((0, R.gn)(this, oi, "f")),`,
+            ExitTrack: `((0, R.gn)(this, si, "f").removeChild((0, R.gn)(this, hi, "f")),`,
         },
         SimCom: {
-            MSimClassExports: `n.d(t, { A: () => A`,
-            MSimConstructor: `(0, r.gn)(this, h, "f").addEventListener("message", (e)`,
             MGetPrivateSim: `(0, r.gn)(this, h, "f")`,
+            MSimConstructor: `(0, r.gn)(this, h, "f").addEventListener("message", (e)`,
             SMsgRcvFunc: `function r(i) {`,
         },
         SoundManager: {
             SoundConstructor: `if ("running" != e.state)`,
+        },
+        Multiplayer: {
+            HostConstruct: `const s = i.getCurrentUserProfile();`,
+            ClientConstruct: `(0, R.GG)(this, Ol, i, "f"),`,
         },
     },
     SimCom: {
@@ -87,7 +108,7 @@ export const ObfNames = {
         SSimMessage: `Ki`,
     },
     SoundManager: {
-        GetBufferMap: `(0, R.gn)(this, v, "f")`,
+        GetBufferMap: `(0, R.gn)(this, A, "f")`,
     },
 };
 
