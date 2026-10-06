@@ -112,20 +112,32 @@ export const Semver = {
         return _semver.rsort([...versions]);
     },
 };
-const packageJsonFetch = await fetch("/package.json");
-const packageJson = await packageJsonFetch.json();
-// @ts-ignore
-const pmlversion = window.electron?.pmlversion || (packageJson.version + "-" + packageJson.pmlBuild) || "web"; /* await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags").then(r => r.json()).then(tags => tags[0]?.name ?? "untagged"); */
-// @ts-ignore
+async function resolvePmlVersion() {
+    // @ts-ignore
+    const electronVersion = window.electron?.pmlversion;
+    if (electronVersion)
+        return electronVersion;
+    try {
+        const res = await fetch("/package.json", { signal: AbortSignal.timeout(3000) });
+        if (!res.ok)
+            throw new Error(`HTTP ${res.status}`);
+        const pkg = await res.json();
+        if (pkg.version)
+            return pkg.pmlBuild ? `${pkg.version}-${pkg.pmlBuild}` : pkg.version;
+    }
+    catch (e) {
+        console.warn("Could not load package.json for version:", e);
+    }
+    return "web";
+}
+const pmlversion = await resolvePmlVersion();
 Object.defineProperty(window, "pmlversion", {
-    get() {
-        return pmlversion;
-    },
+    get() { return pmlversion; },
     set(value) {
         console.warn("Attempted to overwrite window.pmlversion with", value, "- ignored.");
     },
     configurable: true,
-    enumerable: true
+    enumerable: true,
 });
 // Detect Electron runtime
 function isElectron() {
@@ -150,9 +162,9 @@ function isElectron() {
 // Detect Cordova Android app
 function isAndroidApp() {
     const win = window;
-    // 1️⃣ Cordova presence
+    // Cordova presence
     if (typeof win.cordova !== "undefined") {
-        // Cordova Device plugin check (safe optional chain)
+        // Cordova Device plugin check
         const platform = win.device?.platform?.toLowerCase?.();
         if (platform === "android")
             return true;
@@ -160,11 +172,11 @@ function isAndroidApp() {
         if (/android/i.test(navigator.userAgent))
             return true;
     }
-    // 2️⃣ Fallback: Cordova/Capacitor WebView URL pattern
+    // Fallback: Cordova/Capacitor WebView URL pattern
     const url = document.URL || "";
     if (url.startsWith("file:///android_asset/"))
         return true;
-    // 3️⃣ Future-proof: Capacitor-based apps (optional)
+    // Capacitor
     if ((win.Capacitor?.getPlatform?.() || "").toLowerCase() === "android")
         return true;
     return false;
