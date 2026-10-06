@@ -2,7 +2,7 @@
   "name": "polymodloader",
   "productName": "PolyModLoader",
   "version": "0.6.3",
-  "pmlBuild": "0",
+  "pmlBuild": "1",
   "main": "electron/main.js",
   "private": true,
   "scripts": {
@@ -15,10 +15,10 @@
     "dev": "concurrently \"tsc -p src --watch\" \"http-server -c-1 --cors\""
   },
   "devDependencies": {
-    "@electron/packager": "^18.3.6",
-    "concurrently": "^9.2.4",
+    "@electron/packager": "^20.3.0",
+    "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
-    "electron": "42.0.0-alpha.5",
+    "electron": "^44.5.1",
     "http-server": "^14.1.1",
     "typescript": "^6.0.3",
     "undici-types": "^7.22.0"

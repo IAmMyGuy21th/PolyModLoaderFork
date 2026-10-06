@@ -113,17 +113,30 @@ export const Semver = {
     },
 };
 async function resolvePmlVersion() {
+    // Electron
     // @ts-ignore
-    const electronVersion = window.electron?.pmlversion;
-    if (electronVersion)
-        return electronVersion;
+    if (window.electron?.pmlversion)
+        return window.electron.pmlversion;
+    // Capacitor (Android / iOS)
+    // @ts-ignore
+    if (window.Capacitor?.isNativePlatform?.()) {
+        try {
+            // @ts-ignore
+            const { version, build } = await window.Capacitor.Plugins.App.getInfo();
+            return `v${version}-${build}`;
+        }
+        catch (e) {
+            console.warn("App.getInfo() failed:", e);
+        }
+    }
+    // Plain web
     try {
         const res = await fetch("/package.json", { signal: AbortSignal.timeout(3000) });
         if (!res.ok)
             throw new Error(`HTTP ${res.status}`);
         const pkg = await res.json();
         if (pkg.version)
-            return pkg.pmlBuild ? `${pkg.version}-${pkg.pmlBuild}` : pkg.version;
+            return pkg.pmlBuild ? `v${pkg.version}-${pkg.pmlBuild}` : `v${pkg.version}`;
     }
     catch (e) {
         console.warn("Could not load package.json for version:", e);
@@ -139,54 +152,26 @@ Object.defineProperty(window, "pmlversion", {
     configurable: true,
     enumerable: true,
 });
-// Detect Electron runtime
 function isElectron() {
-    // Renderer process (BrowserWindow)
-    if (typeof window !== "undefined") {
-        const win = window;
-        if (typeof win.process === "object" && win.process?.type === "renderer") {
-            return true;
-        }
-    }
-    // Main process or preload
-    const g = globalThis;
-    if (g?.process?.versions?.electron) {
+    // @ts-ignore
+    if (window.electron) {
         return true;
     }
-    // User agent check (nodeIntegration disabled or sandboxed renderer)
-    if (typeof navigator === "object" && /electron/i.test(navigator.userAgent)) {
-        return true;
-    }
-    return false;
+    else
+        return false;
 }
-// Detect Cordova Android app
-function isAndroidApp() {
-    const win = window;
-    // Cordova presence
-    if (typeof win.cordova !== "undefined") {
-        // Cordova Device plugin check
-        const platform = win.device?.platform?.toLowerCase?.();
-        if (platform === "android")
-            return true;
-        // Fallback: user agent heuristic
-        if (/android/i.test(navigator.userAgent))
-            return true;
-    }
-    // Fallback: Cordova/Capacitor WebView URL pattern
-    const url = document.URL || "";
-    if (url.startsWith("file:///android_asset/"))
-        return true;
-    // Capacitor
-    if ((win.Capacitor?.getPlatform?.() || "").toLowerCase() === "android")
-        return true;
-    return false;
+function isCapacitor() {
+    // @ts-ignore
+    return window.Capacitor?.isNativePlatform?.() === true;
 }
 // General app detection
 export function isApp() {
-    return isElectron() || isAndroidApp();
+    return isElectron() || isCapacitor();
 }
 // Full update checker
 export async function checkForUpdate() {
+    if (!isApp())
+        return false;
     const pmlversion = window.pmlversion;
     if (!pmlversion) {
         console.error("pmlversion is missing or empty");
@@ -204,7 +189,8 @@ export async function checkForUpdate() {
     console.log("Current game version:", currentGameVersion.join("."));
     console.log("Current build:", currentBuild);
     try {
-        const response = await fetch("https://git.polymodloader.com/api/v1/repos/polytrackmods/PolyModLoader/tags");
+        console.log("Looking up PML tags");
+        const response = await fetch("https://git.polymodloader.com/api/v1/repos/polytrackmods/PolyModLoader/tags", { signal: AbortSignal.timeout(5000) });
         if (!response.ok)
             throw new Error("Failed to fetch tags");
         const tags = await response.json();
@@ -478,72 +464,20 @@ class PolyModLoaderImpl {
             tokenEnd: `kodub`,
             func: `PolyModLoader ${pmlVersion}`
         });
-        // 🔹 Run environment detection + update check
+        // Check for updates
         setTimeout(() => {
-            console.log("[PML] Running environment detection...");
-            const electron = isElectron();
-            const android = isAndroidApp();
-            const app = isApp();
-            if (electron)
-                console.log("Running Electron app!");
-            if (android)
-                console.log("Running Android app!");
-            if (!app)
-                console.log("Running in web browser.");
-            if (app) {
-                console.log("[PML] App environment detected — checking for updates...");
-                checkForUpdate()
-                    .then((needsUpdate) => {
-                    console.log("[PML] Update check complete:", needsUpdate);
-                    if (needsUpdate) {
-                        alert("You are playing on an outdated version of PolyModLoader.\n" +
-                            "Please update your game by downloading the latest version from:\n" +
-                            "https://git.polymodloader.com/polytrackmods/PolyModLoader/releases");
-                        // Create dialog
-                        /*               const dialog = document.createElement('dialog');
-                        
-                                      const message = document.createElement('p');
-                                      message.textContent = "You are playing on an outdated version of PolyModLoader.\n" + "Click \"ignore update\" to stay on this version or \"update\" to automatically update PML.";
-                        
-                                      const btnCancel = document.createElement('button');
-                                      btnCancel.textContent = 'update';
-                        
-                                      const btnConfirm = document.createElement('button');
-                                      btnConfirm.textContent = 'ignore update';
-                        
-                                      dialog.appendChild(message);
-                                      dialog.appendChild(btnCancel);
-                                      dialog.appendChild(btnConfirm);
-                                      document.body.appendChild(dialog);
-                        
-                                      // Callbacks
-                                      btnConfirm.addEventListener('click', async () => {
-                                        dialog.close();
-                                        try {
-                                          const res = await fetch('https://example.com/api', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ confirmed: true }),
-                                          });
-                                          const data = await res.json();
-                                          console.log(data);
-                                        } catch (err) {
-                                          console.error('Request failed:', err);
-                                        }
-                                      });
-                        
-                                      btnCancel.addEventListener('click', () => {
-                                        dialog.close();
-                                        console.log('cancelled');
-                                      });
-                        
-                                      dialog.showModal(); */
-                    }
-                })
-                    .catch((err) => {
-                    console.error("[PML] Update check failed:", err);
-                });
-            }
+            checkForUpdate()
+                .then((needsUpdate) => {
+                console.log("[PML] Update check complete:", needsUpdate);
+                if (needsUpdate) {
+                    alert("You are playing on an outdated version of PolyModLoader.\n" +
+                        "Please update your game by downloading the latest version from:\n" +
+                        "https://git.polymodloader.com/polytrackmods/PolyModLoader/releases");
+                }
+            })
+                .catch((err) => {
+                console.error("[PML] Update check failed:", err);
+            });
         }, 0);
         __classPrivateFieldSet(this, _PolyModLoaderImpl_simWorkerMixins, [], "f");
         __classPrivateFieldSet(this, _PolyModLoaderImpl_physicsMixins, [], "f");
@@ -803,20 +737,6 @@ class PolyModLoaderImpl {
         }
         loadingDiv.remove();
         this.saveModsToLocalStorage(); // Really just to initiate DB sync
-    }
-    async loadModsFromLauncher() {
-        // @ts-ignore
-        const port = typeof window.electron !== "undefined"
-            // @ts-ignore
-            ? window.electron?.getHelperPort()
-            : null;
-        if (!port)
-            return;
-        const res = await fetch(`http://localhost:${port}/mods`);
-        const modUrls = await res.json();
-        for (const url of modUrls) {
-            await this.addMod({ base: url, version: "latest", loaded: true }, false);
-        }
     }
     getPolyModsStorage() {
         const polyModsStorage = this.localStorage?.getItem("polyMods");
